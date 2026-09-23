@@ -31,23 +31,44 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${oswald.variable} dark scroll-smooth`}>
       <body className="font-[family-name:var(--font-inter)] bg-[#0b0b0d] text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-[#ccff00] selection:text-black">
         <WorkoutProvider>
+          {/* আপডেটেড কাস্টম ডার্ক টোস্টার কনফিগারেশন */}
           <Toaster
             position="top-right"
             toastOptions={{
+              duration: 2500,
               style: {
-                background: "#18181b",
+                background: "#121316",
                 color: "#ffffff",
                 border: "1px solid #27272a",
+                fontSize: "13px",
+                fontWeight: "500",
+                padding: "10px 16px",
+                borderRadius: "10px",
+              },
+              error: {
+                iconTheme: {
+                  primary: "#ef4444",
+                  secondary: "#ffffff",
+                },
+              },
+              success: {
+                iconTheme: {
+                  primary: "#ccff00",
+                  secondary: "#000000",
+                },
               },
             }}
           />
 
+          {/* Sticky Header */}
           <Navbar />
 
+          {/* Centered Main Layout */}
           <main className="flex-1 w-full max-w-[1100px] mx-auto px-4 sm:px-6 py-6">
             {children}
           </main>
 
+          {/* Footer */}
           <Footer />
         </WorkoutProvider>
       </body>
