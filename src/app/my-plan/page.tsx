@@ -7,6 +7,30 @@ import { Clock, Flame, Star, ChevronDown, Check, X } from "lucide-react";
 import { useWorkout, Workout } from "@/context/WorkoutContext";
 import toast from "react-hot-toast";
 
+// ডিজাইন হুবহু রেখে শুধুমাত্র ব্রোকেন ইমেজ সেফলি হ্যান্ডেল করার লজিক কম্পোনেন্ট
+function WorkoutRowImage({
+  src,
+  alt,
+}: {
+  src: string | undefined | null;
+  alt: string;
+}) {
+  const [imgSrc, setImgSrc] = useState<string>(src || "/banner.png");
+
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      fill
+      sizes="(max-width: 768px) 100vw, 80px"
+      className="object-cover"
+      onError={() => {
+        setImgSrc("/banner.png");
+      }}
+    />
+  );
+}
+
 export default function MyPlanPage() {
   const {
     todayPlan = [],
@@ -16,7 +40,6 @@ export default function MyPlanPage() {
     removeFromPlan,
     removeFromSaved,
   } = useWorkout();
-
 
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -209,12 +232,9 @@ export default function MyPlanPage() {
                 >
                   <div className="flex flex-col md:flex-row md:items-center gap-4 w-full">
                     <div className="relative w-full aspect-video md:w-20 md:h-20 md:aspect-square rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-zinc-800">
-                      <Image
-                        src={workout.image || "/banner.png"}
+                      <WorkoutRowImage
+                        src={workout.image}
                         alt={workout.name || "Workout"}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 80px"
-                        className="object-cover"
                       />
                     </div>
 
