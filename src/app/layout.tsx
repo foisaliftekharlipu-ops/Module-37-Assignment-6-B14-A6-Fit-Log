@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Oswald } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { WorkoutProvider } from "@/context/WorkoutContext";
 import { Toaster } from "react-hot-toast";
 
@@ -33,6 +34,7 @@ export default function RootLayout({
         <WorkoutProvider>
           <Navbar />
           <div className="flex-1 bg-[#0b0b0d]">{children}</div>
+          <Footer />
           <Toaster position="bottom-right" />
         </WorkoutProvider>
       </body>
