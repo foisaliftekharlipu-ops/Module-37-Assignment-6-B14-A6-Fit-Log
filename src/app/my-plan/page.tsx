@@ -3,7 +3,7 @@
 import { useState, useMemo, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, X, Clock, Flame, Star } from "lucide-react";
+import { Check, X, Clock, Flame, Star, ChevronDown, Search } from "lucide-react";
 import { useWorkout, Workout } from "@/context/WorkoutContext";
 import toast from "react-hot-toast";
 
@@ -28,6 +28,12 @@ const getDurationValue = (item: Workout): number => {
   return Number(val) || 0;
 };
 
+const getRatingValue = (item: Workout): number => {
+  const raw = item as unknown as Record<string, unknown>;
+  const val = raw.rating ?? raw.rate ?? raw.stars ?? 0;
+  return Number(val) || 0;
+};
+
 export default function MyPlanPage() {
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -44,27 +50,47 @@ export default function MyPlanPage() {
     removeFromSaved,
   } = useWorkout();
 
-  const [sortBy, setSortBy] = useState<string>("default");
+  const [sortBy, setSortBy] = useState<string>("duration");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const currentItems = activeTab === "plan" ? todayPlan : savedWorkouts;
 
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return currentItems;
+    const q = searchQuery.toLowerCase().trim();
+
+    return currentItems.filter((item) => {
+      const nameMatch = item.name?.toLowerCase().includes(q);
+      const catMatch =
+        typeof item.category === "string" && item.category.toLowerCase().includes(q);
+      const muscleMatch = item.muscle?.toLowerCase().includes(q);
+      const equipMatch = Array.isArray(item.equipment)
+        ? item.equipment.some((e) => e.toLowerCase().includes(q))
+        : item.equipment?.toLowerCase().includes(q);
+
+      return nameMatch || catMatch || muscleMatch || equipMatch;
+    });
+  }, [currentItems, searchQuery]);
+
   const totalMinutes = useMemo(() => {
-    return currentItems.reduce((acc, curr) => acc + getDurationValue(curr), 0);
-  }, [currentItems]);
+    return filteredItems.reduce((acc, curr) => acc + getDurationValue(curr), 0);
+  }, [filteredItems]);
 
   const totalCalories = useMemo(() => {
-    return currentItems.reduce((acc, curr) => acc + getCalorieValue(curr), 0);
-  }, [currentItems]);
+    return filteredItems.reduce((acc, curr) => acc + getCalorieValue(curr), 0);
+  }, [filteredItems]);
 
   const sortedItems = useMemo(() => {
-    const items = [...currentItems];
+    const items = [...filteredItems];
     if (sortBy === "duration") {
       items.sort((a, b) => getDurationValue(b) - getDurationValue(a));
     } else if (sortBy === "calories") {
       items.sort((a, b) => getCalorieValue(b) - getCalorieValue(a));
+    } else if (sortBy === "rating") {
+      items.sort((a, b) => getRatingValue(b) - getRatingValue(a));
     }
     return items;
-  }, [currentItems, sortBy]);
+  }, [filteredItems, sortBy]);
 
   const handleMarkAsDone = (id: string | number) => {
     removeFromPlan(id, true);
@@ -73,7 +99,6 @@ export default function MyPlanPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-3.5 sm:px-4 py-8 font-(family-name:--font-inter)">
-      {/* Title & Subtitle */}
       <div className="mb-6">
         <h1 className="text-3xl sm:text-4xl font-bold uppercase tracking-wider text-white font-(family-name:--font-oswald)">
           MY PLAN
@@ -83,7 +108,6 @@ export default function MyPlanPage() {
         </p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 bg-[#12141a] border border-zinc-800/80 rounded-2xl p-4 sm:p-6 divide-x divide-zinc-800/60">
         <div className="px-1 sm:px-2">
           <span className="text-[10px] sm:text-xs text-zinc-400 font-medium block">Exercises</span>
@@ -91,7 +115,7 @@ export default function MyPlanPage() {
             suppressHydrationWarning
             className="text-2xl sm:text-4xl font-bold text-[#ccff00] mt-1 font-(family-name:--font-oswald)"
           >
-            {mounted ? currentItems.length : 0}
+            {mounted ? filteredItems.length : 0}
           </p>
         </div>
         <div className="px-2 sm:px-4">
@@ -114,9 +138,8 @@ export default function MyPlanPage() {
         </div>
       </div>
 
-      {/* Tab & Sort Row */}
-      <div className="flex items-center justify-between gap-2 mb-6">
-        <div className="relative flex items-center bg-[#12141a] p-1 rounded-xl border border-zinc-800 select-none">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
+        <div className="relative flex items-center bg-[#12141a] p-1 rounded-xl border border-zinc-800 select-none self-start">
           <div
             className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-[#181a20] border border-zinc-700/60 transition-transform duration-300 ease-in-out pointer-events-none ${
               activeTab === "plan" ? "translate-x-0" : "translate-x-full"
@@ -144,22 +167,46 @@ export default function MyPlanPage() {
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-zinc-400">
-          <span className="text-zinc-500 whitespace-nowrap">Sort By</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-[#12141a] text-zinc-200 border border-zinc-800 rounded-lg px-2 sm:px-3 py-1.5 outline-none text-xs cursor-pointer hover:border-zinc-700"
-          >
-            <option value="default">Duration</option>
-            <option value="duration">Duration</option>
-            <option value="calories">Calories</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="relative flex-1 sm:w-60">
+            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by name or tag..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#12141a] border border-zinc-800 rounded-lg pl-8.5 pr-8 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 outline-none focus:border-[#ccff00] transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-400 shrink-0">
+            <span className="text-zinc-500 whitespace-nowrap">Sort By</span>
+            <div className="relative inline-flex items-center">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="appearance-none bg-[#12141a] text-zinc-200 border border-zinc-800 rounded-lg pl-3 pr-8 py-1.5 outline-none text-xs cursor-pointer hover:border-zinc-700 transition-colors"
+              >
+                <option value="duration">Duration</option>
+                <option value="calories">Calories</option>
+                <option value="rating">Rating</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 pointer-events-none" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Empty State vs Item List */}
-      {!mounted || sortedItems.length === 0 ? (
+      {!mounted || currentItems.length === 0 ? (
         <div className="border border-dashed border-zinc-800/80 rounded-3xl p-12 sm:p-20 text-center flex flex-col items-center justify-center min-h-95 bg-transparent">
           <h2 className="font-(family-name:--font-oswald) text-xl sm:text-2xl font-bold uppercase tracking-wider text-white">
             NOTHING HERE YET
@@ -174,13 +221,25 @@ export default function MyPlanPage() {
             Go to workouts
           </Link>
         </div>
+      ) : sortedItems.length === 0 ? (
+        <div className="border border-zinc-800/80 rounded-2xl p-10 text-center bg-[#12141a]">
+          <p className="text-zinc-400 text-sm">
+            No workouts found matching &quot;{searchQuery}&quot;
+          </p>
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="mt-3 text-xs text-[#ccff00] hover:underline cursor-pointer"
+          >
+            Clear search
+          </button>
+        </div>
       ) : (
         <div className="space-y-4">
           {sortedItems.map((item: Workout) => {
-            const raw = item as unknown as Record<string, unknown>;
             const cal = getCalorieValue(item);
             const duration = getDurationValue(item);
-            const rating = raw.rating ?? raw.rate ?? raw.stars;
+            const rating = getRatingValue(item);
 
             const equipmentText = Array.isArray(item.equipment)
               ? item.equipment.join(", ")
@@ -220,7 +279,7 @@ export default function MyPlanPage() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                        {rating !== undefined && rating !== null ? `${rating}` : "N/A"}
+                        {rating ? `${rating}` : "N/A"}
                       </span>
                     </div>
                   </div>

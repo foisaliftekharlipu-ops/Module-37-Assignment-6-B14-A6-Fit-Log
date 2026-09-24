@@ -156,8 +156,22 @@ export default function WorkoutDetailPage({ params }: PageProps) {
     : String(workout.equipment || "Barbell, Bench");
 
   const tags: string[] = [];
-  if (workout.category) tags.push(workout.category);
-  if (workout.muscle && !tags.includes(workout.muscle)) tags.push(workout.muscle);
+  if (workout.category) {
+    const categories = Array.isArray(workout.category)
+      ? workout.category
+      : [workout.category];
+    categories.forEach((category) => {
+      if (!tags.includes(category)) tags.push(category);
+    });
+  }
+  if (workout.muscle) {
+    const muscles = Array.isArray(workout.muscle)
+      ? workout.muscle
+      : [workout.muscle];
+    muscles.forEach((muscle) => {
+      if (!tags.includes(muscle)) tags.push(muscle);
+    });
+  }
   if (tags.length === 0) tags.push("Chest", "Arms");
 
   const instructionsList: string[] = Array.isArray(workout.instructions)

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import React, {
@@ -13,14 +14,17 @@ export interface Workout {
   id: string | number;
   _id?: string | number;
   name: string;
-  category?: string;
+  category?: string | string[];
   muscle?: string;
   equipment?: string | string[];
   duration?: number | string;
   calories?: number | string;
   rating?: number | string;
   image?: string;
-  instructions?: string;
+  instructions?: string | string[];
+  difficulty?: string;
+  sets?: number | string;
+  reps?: string;
 }
 
 export interface WorkoutContextType {
@@ -42,40 +46,42 @@ export interface WorkoutContextType {
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
 
 export function WorkoutProvider({ children }: { children: ReactNode }) {
-  const [todayPlan, setTodayPlan] = useState<Workout[]>(() => {
-    if (typeof window === "undefined") return [];
+  const [todayPlan, setTodayPlan] = useState<Workout[]>([]);
+  const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>([]);
+  const [activeTab, setActiveTab] = useState<"plan" | "saved">("plan");
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  useEffect(() => {
     try {
       const storedPlan = localStorage.getItem("fitlog_todayPlan");
-      return storedPlan ? JSON.parse(storedPlan) : [];
-    } catch (e) {
-      console.error("Failed to load plan from localStorage:", e);
-      return [];
-    }
-  });
-  const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>(() => {
-    if (typeof window === "undefined") return [];
-
-    try {
+      if (storedPlan) {
+        setTodayPlan(JSON.parse(storedPlan));
+      }
       const storedSaved = localStorage.getItem("fitlog_savedWorkouts");
-      return storedSaved ? JSON.parse(storedSaved) : [];
+      if (storedSaved) {
+        setSavedWorkouts(JSON.parse(storedSaved));
+      }
     } catch (e) {
-      console.error("Failed to load saved workouts from localStorage:", e);
-      return [];
+      console.error("Failed to load state from localStorage:", e);
+    } finally {
+      setIsLoaded(true);
     }
-  });
-  const [activeTab, setActiveTab] = useState<"plan" | "saved">("plan");
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem("fitlog_todayPlan", JSON.stringify(todayPlan));
-  }, [todayPlan]);
+    if (isLoaded) {
+      localStorage.setItem("fitlog_todayPlan", JSON.stringify(todayPlan));
+    }
+  }, [todayPlan, isLoaded]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "fitlog_savedWorkouts",
-      JSON.stringify(savedWorkouts)
-    );
-  }, [savedWorkouts]);
+    if (isLoaded) {
+      localStorage.setItem(
+        "fitlog_savedWorkouts",
+        JSON.stringify(savedWorkouts)
+      );
+    }
+  }, [savedWorkouts, isLoaded]);
 
   const isInPlan = (id: string | number) => {
     return todayPlan.some((item) => String(item.id) === String(id));
