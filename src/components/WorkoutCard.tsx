@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Clock, Flame, Star } from "lucide-react";
 
 interface WorkoutCardProps {
-  workout: any;
+  workout: Record<string, unknown>;
 }
 
 const workoutStatsMap: Record<
@@ -48,13 +48,13 @@ const workoutStatsMap: Record<
     calories: 60,
     rating: 4.4,
   },
-  "burpee": {
+  "burgee": {
     categories: ["Full Body"],
     duration: 12,
     calories: 160,
     rating: 4.2,
   },
-  "conventional deadlift": {
+  "conventional deadlier": {
     categories: ["Back", "Legs"],
     duration: 28,
     calories: 260,
@@ -78,7 +78,7 @@ const workoutStatsMap: Record<
     calories: 70,
     rating: 4.1,
   },
-  "kettlebell swing": {
+  "kettleful swing": {
     categories: ["Full Body", "Shoulders"],
     duration: 16,
     calories: 200,
@@ -87,7 +87,7 @@ const workoutStatsMap: Record<
 };
 
 export default function WorkoutCard({ workout }: WorkoutCardProps) {
-  const workoutName = workout?.name || "";
+  const workoutName = typeof workout?.name === "string" ? workout.name : "";
   const normalizedName = workoutName.toLowerCase().trim();
   const fallback = workoutStatsMap[normalizedName];
 
@@ -147,7 +147,11 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
     durationVal = fallback?.duration || 25;
   }
 
-  const ratingVal = workout?.rating || fallback?.rating || 4.8;
+  const rawRating = workout?.rating;
+  const ratingVal =
+    typeof rawRating === "number" || typeof rawRating === "string"
+      ? rawRating
+      : fallback?.rating || 4.8;
 
   const rawEquipment = workout?.equipment || workout?.equipments;
   const equipmentText = Array.isArray(rawEquipment)
@@ -155,15 +159,19 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
     : typeof rawEquipment === "string"
     ? rawEquipment
     : "Barbell, Bench";
+  const imageSrc =
+    typeof workout?.image === "string" && workout.image.trim() !== ""
+      ? workout.image
+      : "/banner.png";
 
   return (
     <Link
       href={`/workout/${workout.id || workout._id}`}
       className="group flex flex-col bg-[#16181f] border border-zinc-800/80 rounded-2xl overflow-hidden hover:border-[#ccff00]/70 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/70"
     >
-      <div className="relative w-full aspect-[16/10] bg-zinc-900 overflow-hidden">
+      <div className="relative w-full aspect-16/10 bg-zinc-900 overflow-hidden">
         <Image
-          src={workout?.image || "/banner.png"}
+          src={imageSrc}
           alt={workoutName || "Workout"}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -173,7 +181,7 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
 
       <div className="p-5 flex flex-col flex-1 justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-1.5 min-h-[22px]">
+          <div className="flex flex-wrap items-center gap-1.5 min-h-5.5">
             {categories.map((cat, idx) => (
               <span
                 key={idx}
@@ -184,7 +192,7 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
             ))}
           </div>
 
-          <h3 className="font-[family-name:var(--font-oswald)] text-xl font-bold uppercase tracking-wide text-white leading-tight mt-1 group-hover:text-[#ccff00] transition-colors">
+          <h3 className="font-(family-name:--font-oswald) text-xl font-bold uppercase tracking-wide text-white leading-tight mt-1 group-hover:text-[#ccff00] transition-colors">
             {workoutName}
           </h3>
 

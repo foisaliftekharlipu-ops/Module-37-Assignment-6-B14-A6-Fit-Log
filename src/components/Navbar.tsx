@@ -79,7 +79,7 @@ export default function Navbar() {
               setActiveNav("my-plan");
               setMobileMenuOpen(false);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-0 outline-none focus:outline-none transition-all duration-150 text-zinc-300 hover:bg-[#1a1d23]"
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border-0 outline-none focus:outline-none transition-all duration-150 text-zinc-300 hover:bg-[#1a1d23]"
           >
             <span>Plan</span>
             <span
@@ -97,7 +97,7 @@ export default function Navbar() {
               setActiveNav("my-plan");
               setMobileMenuOpen(false);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-0 outline-none focus:outline-none transition-all duration-150 text-zinc-300 hover:bg-[#1a1d23]"
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border-0 outline-none focus:outline-none transition-all duration-150 text-zinc-300 hover:bg-[#1a1d23]"
           >
             <span>Saved</span>
             <span
