@@ -1,31 +1,74 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, Flame, Star, ChevronDown, Check, X } from "lucide-react";
 import { useWorkout, Workout } from "@/context/WorkoutContext";
 import toast from "react-hot-toast";
 
-// ডিজাইন হুবহু রেখে শুধুমাত্র ব্রোকেন ইমেজ সেফলি হ্যান্ডেল করার লজিক কম্পোনেন্ট
+interface RawApiWorkout {
+  id?: string | number;
+  _id?: string | number;
+  name?: string;
+  image?: string;
+  thumbnail?: string;
+}
+
+const ORIGINAL_CARTOON_IMAGES: Record<string, string> = {
+  "barbell bench press":
+    "https://img.freepik.com/free-photo/3d-cartoon-character-training-gym_23-2151048866.jpg",
+  "back squat":
+    "https://img.freepik.com/free-photo/view-3d-boy-practicing-sports_23-2151048865.jpg",
+  "conventional deadlift":
+    "https://img.freepik.com/free-photo/anime-character-gym-fitness_23-2151608670.jpg",
+  "overhead press":
+    "https://img.freepik.com/free-photo/3d-cartoon-gym-training_23-2151048867.jpg",
+  "dumbbell bicep curl":
+    "https://img.freepik.com/free-photo/3d-character-training-biceps_23-2151048868.jpg",
+  "pull-up":
+    "https://img.freepik.com/free-photo/3d-gym-fitness-pullup_23-2151048869.jpg",
+};
+
 function WorkoutRowImage({
   src,
   alt,
+  workoutName,
+  apiMap,
 }: {
   src: string | undefined | null;
   alt: string;
+  workoutName: string;
+  apiMap: Record<string, string>;
 }) {
-  const [imgSrc, setImgSrc] = useState<string>(src || "/banner.png");
+  const normalized = workoutName.toLowerCase().trim();
+
+  const targetSrc =
+    apiMap[normalized] ||
+    (src && src !== "/banner.png" ? src : null) ||
+    ORIGINAL_CARTOON_IMAGES[normalized] ||
+    "/banner.png";
+
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+
+  const finalSrc = failedSrc || targetSrc;
 
   return (
     <Image
-      src={imgSrc}
+      src={finalSrc}
       alt={alt}
       fill
       sizes="(max-width: 768px) 100vw, 80px"
       className="object-cover"
       onError={() => {
-        setImgSrc("/banner.png");
+        if (
+          ORIGINAL_CARTOON_IMAGES[normalized] &&
+          finalSrc !== ORIGINAL_CARTOON_IMAGES[normalized]
+        ) {
+          setFailedSrc(ORIGINAL_CARTOON_IMAGES[normalized]);
+        } else {
+          setFailedSrc("/banner.png");
+        }
       }}
     />
   );
@@ -47,7 +90,41 @@ export default function MyPlanPage() {
     () => false,
   );
 
-  const [sortBy, setSortBy] = useState<"duration" | "calories" | "rating">("duration");
+  const [sortBy, setSortBy] = useState<"duration" | "calories" | "rating">(
+    "duration",
+  );
+  const [apiImages, setApiImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    async function syncOriginalImages() {
+      try {
+        const res = await fetch("https://api.abcz.workers.dev/api/fitlog");
+        if (res.ok) {
+          const data: unknown = await res.json();
+          const items: RawApiWorkout[] = Array.isArray(data)
+            ? (data as RawApiWorkout[])
+            : (data as { data?: RawApiWorkout[] })?.data || [];
+
+          const mapping: Record<string, string> = {};
+          items.forEach((item: RawApiWorkout) => {
+            if (item.name && item.image) {
+              mapping[String(item.name).toLowerCase().trim()] = item.image;
+            }
+          });
+          if (isMounted) {
+            setApiImages(mapping);
+          }
+        }
+      } catch {
+        // Fetch fallback
+      }
+    }
+    syncOriginalImages();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const isSavedTab = activeTab === "saved";
   const currentList: Workout[] = isSavedTab ? savedWorkouts : todayPlan;
@@ -60,7 +137,10 @@ export default function MyPlanPage() {
   };
 
   const getCaloriesValue = (item: Workout): number => {
-    const rawObj = item as unknown as Record<string, string | number | undefined>;
+    const rawObj = item as unknown as Record<
+      string,
+      string | number | undefined
+    >;
     const raw =
       item.calories ??
       rawObj.caloriesBurned ??
@@ -71,7 +151,10 @@ export default function MyPlanPage() {
   };
 
   const getDurationValue = (item: Workout): number => {
-    const rawObj = item as unknown as Record<string, string | number | undefined>;
+    const rawObj = item as unknown as Record<
+      string,
+      string | number | undefined
+    >;
     const raw = item.duration ?? rawObj.time ?? rawObj.durationMinutes;
     return extractNumber(raw);
   };
@@ -88,8 +171,14 @@ export default function MyPlanPage() {
   });
 
   const totalExercises = currentList.length;
-  const totalMinutes = currentList.reduce((acc, item) => acc + getDurationValue(item), 0);
-  const totalCalories = currentList.reduce((acc, item) => acc + getCaloriesValue(item), 0);
+  const totalMinutes = currentList.reduce(
+    (acc, item) => acc + getDurationValue(item),
+    0,
+  );
+  const totalCalories = currentList.reduce(
+    (acc, item) => acc + getCaloriesValue(item),
+    0,
+  );
 
   const handleMarkAsDone = (id: string | number) => {
     if (typeof removeFromPlan === "function") {
@@ -109,7 +198,6 @@ export default function MyPlanPage() {
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 font-(family-name:--font-inter)">
       <div className="space-y-6">
-        
         <p className="text-zinc-400 text-xs sm:text-sm">
           Cap of five lifts for today. Finish them, then load more.
         </p>
@@ -118,7 +206,9 @@ export default function MyPlanPage() {
         <div className="grid grid-cols-3 bg-[#12141a] border border-zinc-800/80 rounded-2xl p-4 sm:p-6 lg:p-8">
           {/* Exercises */}
           <div className="flex flex-col gap-1 border-r border-zinc-800 pr-2 sm:pr-6">
-            <span className="text-zinc-400 text-[11px] sm:text-xs font-semibold">Exercises</span>
+            <span className="text-zinc-400 text-[11px] sm:text-xs font-semibold">
+              Exercises
+            </span>
             <span
               suppressHydrationWarning
               className="font-(family-name:--font-oswald) text-2xl sm:text-3xl lg:text-4xl font-bold text-[#ccff00]"
@@ -129,7 +219,9 @@ export default function MyPlanPage() {
 
           {/* Minutes */}
           <div className="flex flex-col gap-1 border-r border-zinc-800 px-2 sm:px-6">
-            <span className="text-zinc-400 text-[11px] sm:text-xs font-semibold">Minutes</span>
+            <span className="text-zinc-400 text-[11px] sm:text-xs font-semibold">
+              Minutes
+            </span>
             <span
               suppressHydrationWarning
               className="font-(family-name:--font-oswald) text-2xl sm:text-3xl lg:text-4xl font-bold text-white"
@@ -140,7 +232,9 @@ export default function MyPlanPage() {
 
           {/* Calories */}
           <div className="flex flex-col gap-1 pl-2 sm:pl-6">
-            <span className="text-zinc-400 text-[11px] sm:text-xs font-semibold">Calories</span>
+            <span className="text-zinc-400 text-[11px] sm:text-xs font-semibold">
+              Calories
+            </span>
             <span
               suppressHydrationWarning
               className="font-(family-name:--font-oswald) text-2xl sm:text-3xl lg:text-4xl font-bold text-white"
@@ -185,7 +279,9 @@ export default function MyPlanPage() {
               <select
                 value={sortBy}
                 onChange={(e) =>
-                  setSortBy(e.target.value as "duration" | "calories" | "rating")
+                  setSortBy(
+                    e.target.value as "duration" | "calories" | "rating",
+                  )
                 }
                 className="appearance-none bg-[#12141a] border border-zinc-800 text-white rounded-xl px-3 py-1.5 pr-8 text-xs font-medium cursor-pointer focus:outline-none"
               >
@@ -202,7 +298,9 @@ export default function MyPlanPage() {
         {!mounted ? (
           <div className="w-full bg-[#12141a] border border-zinc-800/80 rounded-3xl py-14 px-6 flex flex-col items-center justify-center text-center gap-3">
             <div className="w-8 h-8 border-3 border-[#ccff00] border-t-transparent rounded-full animate-spin" />
-            <p className="text-zinc-400 text-xs sm:text-sm">Loading workouts…</p>
+            <p className="text-zinc-400 text-xs sm:text-sm">
+              Loading workouts…
+            </p>
           </div>
         ) : sortedList.length === 0 ? (
           <div className="w-full bg-[#12141a] border border-zinc-800/80 rounded-3xl py-14 px-6 flex flex-col items-center justify-center text-center gap-3">
@@ -235,6 +333,8 @@ export default function MyPlanPage() {
                       <WorkoutRowImage
                         src={workout.image}
                         alt={workout.name || "Workout"}
+                        workoutName={workout.name || ""}
+                        apiMap={apiImages}
                       />
                     </div>
 
@@ -298,7 +398,6 @@ export default function MyPlanPage() {
             })}
           </div>
         )}
-
       </div>
     </main>
   );

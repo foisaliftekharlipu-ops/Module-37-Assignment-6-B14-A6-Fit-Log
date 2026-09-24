@@ -48,13 +48,13 @@ const workoutStatsMap: Record<
     calories: 60,
     rating: 4.4,
   },
-  burgee: {
+  burpee: {
     categories: ["Full Body"],
     duration: 12,
     calories: 160,
     rating: 4.2,
   },
-  "conventional deadlier": {
+  "conventional deadlift": {
     categories: ["Back", "Legs"],
     duration: 28,
     calories: 260,
@@ -78,7 +78,7 @@ const workoutStatsMap: Record<
     calories: 70,
     rating: 4.1,
   },
-  "kettleful swing": {
+  "kettlebell swing": {
     categories: ["Full Body", "Shoulders"],
     duration: 16,
     calories: 200,
@@ -199,7 +199,8 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
             ))}
           </div>
 
-          <h3 className="font-[--font-oswald] text-xl font-bold uppercase tracking-wide text-white leading-tight mt-1 group-hover:text-[#ccff00] transition-colors">
+          {/* এখানে font-(family-name:--font-oswald) দিয়ে আপনার মূল ওসওয়াল্ড ফন্টটি রিস্টোর করা হয়েছে */}
+          <h3 className="font-(family-name:--font-oswald) text-xl font-bold uppercase tracking-wide text-white leading-tight mt-1 group-hover:text-[#ccff00] transition-colors">
             {workoutName}
           </h3>
 
