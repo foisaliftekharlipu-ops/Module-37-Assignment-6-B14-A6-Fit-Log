@@ -1,209 +1,277 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { use, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  CalendarPlus,
+  Bookmark,
+  ChevronLeft,
+  Check,
+} from "lucide-react";
 import { useWorkout, Workout } from "@/context/WorkoutContext";
-import { Dumbbell, Bookmark } from "lucide-react";
+import toast from "react-hot-toast";
 
-export default function WorkoutDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }> | { id: string };
-}) {
-  const resolvedParams = "then" in params ? use(params) : params;
-  const { id } = resolvedParams;
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function WorkoutDetailPage({ params }: PageProps) {
+  const resolvedParams = use(params);
+  const workoutId = resolvedParams.id;
 
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [loading, setLoading] = useState(true);
-  const { todayPlan, addToPlan, toggleSaveWorkout, isInPlan, isSaved } = useWorkout();
+
+  const {
+    todayPlan = [],
+    savedWorkouts = [],
+    addToPlan,
+    toggleSaveWorkout,
+  } = useWorkout();
 
   useEffect(() => {
-    async function fetchDetail() {
+    async function fetchWorkout() {
       try {
         setLoading(true);
-        const res = await fetch(`https://api.abcz.workers.dev/api/fitlog/${id}`);
+        const res = await fetch("https://api.abcz.workers.dev/api/fitlog");
         if (res.ok) {
-          const json = await res.json();
-          const raw = json.data || json;
+          const data: unknown = await res.json();
+          const items: Workout[] = Array.isArray(data)
+            ? (data as Workout[])
+            : ((data as { data?: Workout[] })?.data || []);
 
-          const formattedWorkout: Workout = {
-            ...raw,
-            calories:
-              raw.calories ??
-              raw.caloriesBurned ??
-              raw.calories_burned ??
-              raw.calorie ??
-              raw.kcal,
-            duration: raw.duration ?? raw.durationMinutes ?? raw.time,
-          };
-
-          setWorkout(formattedWorkout);
+          const matched = items.find(
+            (item: Workout) =>
+              String(
+                item.id ??
+                  (item as unknown as { _id?: string | number })._id
+              ) === String(workoutId)
+          );
+          if (matched) {
+            setWorkout(matched);
+          }
         }
       } catch (err) {
-        console.error("Failed to fetch detail:", err);
+        console.error("Failed to load workout details:", err);
       } finally {
         setLoading(false);
       }
     }
-
-    if (id) {
-      fetchDetail();
-    }
-  }, [id]);
+    fetchWorkout();
+  }, [workoutId]);
 
   if (loading) {
     return (
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-16 flex items-center justify-center font-(family-name:--font-inter)">
-        <div className="flex flex-col items-center gap-3 text-zinc-400">
-          <div className="w-10 h-10 border-4 border-[#ccff00] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium">Loading details…</p>
-        </div>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-12 flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <div className="w-8 h-8 border-3 border-[#ccff00] border-t-transparent rounded-full animate-spin" />
+        <p className="text-zinc-400 text-sm">Loading workout details…</p>
       </main>
     );
   }
 
   if (!workout) {
     return (
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-16 text-center font-(family-name:--font-inter)">
-        <h2 className="font-(family-name:--font-oswald) text-2xl font-bold uppercase text-white">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-16 text-center">
+        <h2 className="font-(family-name:--font-oswald) text-2xl font-bold uppercase text-white tracking-wide">
           Workout Not Found
         </h2>
-        <Link href="/" className="text-[#ccff00] hover:underline mt-4 inline-block text-sm">
-          Return to Library
+        <p className="text-zinc-400 text-sm mt-2">
+          The requested workout could not be located in the library.
+        </p>
+        <Link
+          href="/"
+          className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#ccff00] text-black font-bold text-xs uppercase tracking-wider hover:bg-[#b8e600] transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back to Workouts
         </Link>
       </main>
     );
   }
 
-  const categories = Array.isArray(workout.category)
-    ? workout.category
-    : workout.category
-    ? [workout.category]
-    : ["Back", "Arms"];
+  const inPlan = todayPlan.some(
+    (item) => String(item.id) === String(workout.id)
+  );
+  const alreadySaved = savedWorkouts.some(
+    (item) => String(item.id) === String(workout.id)
+  );
 
-  const inPlan = isInPlan(workout.id);
-  const alreadySaved = isSaved(workout.id);
-  const isCapReached = todayPlan.length >= 5 && !inPlan;
+  const isCapReached = todayPlan.length >= 5;
+
+  const handlePlanClick = () => {
+    if (inPlan) {
+      toast.error("Already added to today's plan");
+      return;
+    }
+    if (isCapReached) {
+      toast.error("Daily cap reached: Maximum 5 workouts allowed");
+      return;
+    }
+    addToPlan(workout);
+  };
+
+  const handleSaveClick = () => {
+    if (alreadySaved) {
+      toast.error("Already in your saved list");
+    } else {
+      toggleSaveWorkout(workout);
+    }
+  };
+
+  const rawItem = workout as unknown as Record<string, unknown>;
+
+  const caloriesVal: string = String(
+    rawItem.calories ??
+      rawItem.caloriesBurned ??
+      rawItem.calorie ??
+      rawItem.calories_burned ??
+      "180"
+  );
+
+  const durationVal: string = String(
+    rawItem.duration ??
+      rawItem.time ??
+      rawItem.durationMinutes ??
+      "25"
+  );
+
+  const ratingVal: string = String(
+    rawItem.rating ??
+      rawItem.rate ??
+      rawItem.stars ??
+      "4.8"
+  );
+
+  const difficultyVal: string = String(
+    rawItem.difficulty ??
+      rawItem.level ??
+      "Intermediate"
+  );
+
+  const setsVal: string = String(rawItem.sets ?? "4");
+  const repsVal: string = String(rawItem.reps ?? "6-8");
+
+  const equipmentText: string = Array.isArray(workout.equipment)
+    ? workout.equipment.join(", ")
+    : String(workout.equipment || "Barbell, Bench");
+
+  const tags: string[] = [];
+  if (workout.category) tags.push(workout.category);
+  if (workout.muscle && !tags.includes(workout.muscle)) tags.push(workout.muscle);
+  if (tags.length === 0) tags.push("Chest", "Arms");
+
+  const instructionsList: string[] = Array.isArray(workout.instructions)
+    ? (workout.instructions as string[])
+    : typeof workout.instructions === "string"
+    ? (workout.instructions as string)
+        .split(/(?:\r\n|\r|\n|\.\s+)/)
+        .map((s: string) => s.replace(/^\d+[\.\)]\s*/, "").trim())
+        .filter((s: string) => s.length > 0)
+    : [
+        "Lie on the bench with eyes under the bar and feet planted.",
+        "Take the bar off the rack with locked elbows and lower to mid-chest.",
+        "Press up in a slight arc until elbows lock without bouncing.",
+        "Keep shoulder blades pinched and a natural arch in the back.",
+      ];
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 font-(family-name:--font-inter)">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-stretch">
-        
-        {/* Left: Image */}
-        <div className="relative w-full min-h-95 sm:min-h-115 lg:min-h-130 h-full rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 lg:py-10 font-(family-name:--font-inter)">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
+        <div className="lg:col-span-5 relative w-full aspect-4/5 sm:aspect-square lg:aspect-auto lg:h-full min-h-120 rounded-3xl overflow-hidden bg-[#12141a] border border-zinc-800/80 shadow-2xl">
           <Image
             src={workout.image || "/banner.png"}
-            alt={workout.name}
+            alt={workout.name || "Workout"}
             fill
+            unoptimized
             priority
-            sizes="(max-width: 1024px) 100vw, 50vw"
+            sizes="(max-width: 1024px) 100vw, 480px"
             className="object-cover"
           />
         </div>
 
-        {/* Right: Info */}
-        <div className="flex flex-col justify-between gap-6">
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat, idx) => (
+        <div className="lg:col-span-7 flex flex-col justify-between">
+          <div>
+            <h1 className="font-(family-name:--font-oswald) text-3xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-wider text-white">
+              {workout.name}
+            </h1>
+
+            <p className="text-zinc-400 text-xs sm:text-sm mt-3 leading-relaxed">
+              {(rawItem.description as string) ||
+                "A compound press that builds chest thickness, triceps, and pressing power from a stable bench."}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              {tags.map((tag, idx) => (
                 <span
                   key={idx}
-                  className="px-3 py-1 bg-[#1a1d24] text-[#ccff00] border border-zinc-800 rounded-full text-[11px] font-bold uppercase tracking-wider"
+                  className="bg-[#ccff00] text-black text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider"
                 >
-                  {cat}
+                  {tag}
                 </span>
               ))}
             </div>
 
-            <h1 className="font-(family-name:--font-oswald) text-4xl sm:text-5xl font-bold uppercase text-white tracking-wide">
-              {workout.name}
-            </h1>
+            <div className="mt-5 bg-[#12141a] border border-zinc-800/80 rounded-2xl p-5 divide-y divide-zinc-800/60 text-xs">
+              <div className="flex items-center justify-between py-2.5 first:pt-0">
+                <span className="text-zinc-400 font-semibold tracking-wider uppercase">EQUIPMENT</span>
+                <span className="text-zinc-200 font-medium">{equipmentText}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-zinc-400 font-semibold tracking-wider uppercase">DIFFICULTY</span>
+                <span className="text-zinc-200 font-medium">{difficultyVal}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-zinc-400 font-semibold tracking-wider uppercase">SETS</span>
+                <span className="text-zinc-200 font-medium">{setsVal}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-zinc-400 font-semibold tracking-wider uppercase">REPS</span>
+                <span className="text-zinc-200 font-medium">{repsVal}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-zinc-400 font-semibold tracking-wider uppercase">DURATION</span>
+                <span className="text-zinc-200 font-medium">{durationVal} min</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-zinc-400 font-semibold tracking-wider uppercase">CALORIES</span>
+                <span className="text-zinc-200 font-medium">{caloriesVal} kcal</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 last:pb-0">
+                <span className="text-zinc-400 font-semibold tracking-wider uppercase">RATING</span>
+                <span className="text-zinc-200 font-medium">{ratingVal}</span>
+              </div>
+            </div>
 
-            <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
-              {workout.description ||
-                "Bodyweight vertical pull that hammers lats, biceps, and grip while improving relative strength."}
-            </p>
-          </div>
-
-          {/* Specs Table */}
-          <div className="bg-[#12141a] border border-zinc-800/80 rounded-2xl p-5 sm:p-6 divide-y divide-zinc-800/60 text-xs sm:text-[13px]">
-            <div className="flex justify-between py-2.5">
-              <span className="text-zinc-400 font-semibold uppercase tracking-wider">EQUIPMENT</span>
-              <span className="text-white font-medium">
-                {Array.isArray(workout.equipment)
-                  ? workout.equipment.join(", ")
-                  : workout.equipment || "Pull-up Bar"}
-              </span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-zinc-400 font-semibold uppercase tracking-wider">DIFFICULTY</span>
-              <span className="text-white font-medium">{workout.difficulty || "Intermediate"}</span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-zinc-400 font-semibold uppercase tracking-wider">SETS</span>
-              <span className="text-white font-medium">{workout.sets || "4"}</span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-zinc-400 font-semibold uppercase tracking-wider">REPS</span>
-              <span className="text-white font-medium">{workout.reps || "6-10"}</span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-zinc-400 font-semibold uppercase tracking-wider">DURATION</span>
-              <span className="text-white font-medium">
-                {typeof workout.duration === "number"
-                  ? `${workout.duration} min`
-                  : workout.duration || "15 min"}
-              </span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-zinc-400 font-semibold uppercase tracking-wider">CALORIES</span>
-              <span className="text-white font-medium">
-                {typeof workout.calories === "number"
-                  ? `${workout.calories} kcal`
-                  : workout.calories
-                  ? `${workout.calories} kcal`
-                  : "N/A"}
-              </span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-zinc-400 font-semibold uppercase tracking-wider">RATING</span>
-              <span className="text-white font-medium">{workout.rating || "4.7"}</span>
+            <div className="mt-6">
+              <h3 className="font-(family-name:--font-oswald) text-base sm:text-lg font-bold uppercase tracking-wider text-white">
+                INSTRUCTIONS
+              </h3>
+              <ol className="mt-2.5 space-y-1.5 text-xs sm:text-sm text-zinc-400 leading-relaxed list-none">
+                {instructionsList.map((step, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-zinc-300 font-semibold">{idx + 1}.</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
 
-          {/* Instructions */}
-          <div className="space-y-3">
-            <h3 className="font-(family-name:--font-oswald) text-lg sm:text-xl font-bold uppercase text-white tracking-wide">
-              INSTRUCTIONS
-            </h3>
-            <ol className="list-decimal list-inside space-y-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              {workout.instructions && workout.instructions.length > 0 ? (
-                workout.instructions.map((step, idx) => <li key={idx}>{step}</li>)
-              ) : (
-                <>
-                  <li>Hang from the bar with a shoulder-width overhand grip.</li>
-                  <li>Brace your core and pull your chest toward the bar.</li>
-                  <li>Pause at the top with elbows tucked, then lower with control.</li>
-                  <li>Avoid kipping unless you are training a specific variation.</li>
-                </>
-              )}
-            </ol>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 pt-1">
+          <div className="flex flex-wrap items-center gap-3.5 mt-8 pt-2">
             <button
               type="button"
-              onClick={() => addToPlan(workout)}
-              className={`inline-flex items-center gap-2 text-xs sm:text-sm font-bold px-6 py-2.5 rounded-full transition-all duration-200 cursor-pointer ${
-                inPlan
-                  ? "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700"
-                  : isCapReached
-                  ? "bg-zinc-800/80 text-zinc-400 border border-zinc-700 hover:bg-zinc-700"
-                  : "bg-[#ccff00] hover:bg-[#b8e600] text-black shadow-[0_0_20px_rgba(204,255,0,0.25)] hover:scale-105 active:scale-95"
+              onClick={handlePlanClick}
+              className={`inline-flex items-center gap-2 text-xs sm:text-sm font-bold px-6 py-3 rounded-full transition-all duration-200 cursor-pointer ${
+                inPlan || isCapReached
+                  ? "bg-[#181a20] border border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                  : "bg-[#ccff00] hover:bg-[#b8e600] text-black shadow-[0_0_20px_rgba(204,255,0,0.25)]"
               }`}
             >
-              <Dumbbell className="w-4 h-4" />
+              {inPlan ? (
+                <Check className="w-4 h-4 stroke-[2.5]" />
+              ) : (
+                <CalendarPlus className="w-4 h-4 stroke-[2.5]" />
+              )}
               <span>
                 {inPlan
                   ? "Already in Plan"
@@ -215,20 +283,22 @@ export default function WorkoutDetailPage({
 
             <button
               type="button"
-              onClick={() => toggleSaveWorkout(workout)}
-              className={`inline-flex items-center gap-2 text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-full transition-all duration-200 cursor-pointer ${
+              onClick={handleSaveClick}
+              className={`inline-flex items-center gap-2 text-xs sm:text-sm font-semibold px-6 py-3 rounded-full transition-all duration-200 cursor-pointer ${
                 alreadySaved
-                  ? "border border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800"
-                  : "border border-zinc-700 bg-transparent hover:bg-zinc-800 text-white active:scale-95"
+                  ? "border border-zinc-800 bg-[#181a20] text-zinc-300 hover:border-zinc-700"
+                  : "border border-zinc-800 bg-transparent text-zinc-400 hover:bg-zinc-800/60 hover:text-white"
               }`}
             >
-              <Bookmark className={`w-4 h-4 ${alreadySaved ? "text-[#ccff00]" : "text-zinc-400"}`} />
+              <Bookmark
+                className={`w-4 h-4 ${
+                  alreadySaved ? "text-[#ccff00] stroke-[2.5]" : "text-zinc-400"
+                }`}
+              />
               <span>{alreadySaved ? "Already Saved" : "Save for later"}</span>
             </button>
           </div>
-
         </div>
-
       </div>
     </main>
   );

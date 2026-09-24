@@ -19,16 +19,18 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[#0b0b0d] border-b border-zinc-900 font-(family-name:--font-inter)">
-      <div className="mx-auto w-full max-w-6xl px-4 h-16 flex items-center justify-between">
-        
-        {/* Left: Brand Logo */}
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 text-zinc-300 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors outline-none focus:outline-none"
+            className="md:hidden p-1.5 text-zinc-300 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors outline-none"
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
           </button>
 
           <Link
@@ -37,19 +39,18 @@ export default function Navbar() {
               setActiveNav(null);
               setMobileMenuOpen(false);
             }}
-            className="flex items-center gap-2 font-(family-name:--font-oswald) text-lg sm:text-xl font-bold tracking-wider text-white hover:opacity-90 transition-opacity outline-none"
+            className="flex items-center gap-1.5 font-(family-name:--font-oswald) text-lg sm:text-xl font-bold tracking-wider text-white hover:opacity-90 transition-opacity"
           >
             <Dumbbell className="w-5 h-5 text-[#ccff00]" />
             <span>FITLOG</span>
           </Link>
         </div>
 
-        {/* Center: Navigation Links */}
         <nav className="hidden md:flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-wide">
           <Link
             href="/"
             onClick={() => setActiveNav("workouts")}
-            className={`px-3.5 py-1.5 rounded-xl border-0 outline-none focus:outline-none focus:ring-0 transition-all duration-150 ${
+            className={`px-3.5 py-1.5 rounded-xl transition-all duration-150 ${
               activeNav === "workouts"
                 ? "bg-[#1a1d23] text-[#ccff00]"
                 : "text-zinc-300 hover:bg-[#1a1d23] hover:text-[#ccff00]"
@@ -61,7 +62,7 @@ export default function Navbar() {
           <Link
             href="/my-plan"
             onClick={() => setActiveNav("my-plan")}
-            className={`px-3.5 py-1.5 rounded-xl border-0 outline-none focus:outline-none focus:ring-0 transition-all duration-150 ${
+            className={`px-3.5 py-1.5 rounded-xl transition-all duration-150 ${
               activeNav === "my-plan"
                 ? "bg-[#1a1d23] text-[#ccff00]"
                 : "text-zinc-300 hover:bg-[#1a1d23] hover:text-[#ccff00]"
@@ -71,8 +72,7 @@ export default function Navbar() {
           </Link>
         </nav>
 
-        {/* Right: Plan & Saved Badges with dynamic active state */}
-        <div className="flex items-center gap-2 text-xs font-semibold">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold">
           <Link
             href="/my-plan"
             onClick={() => {
@@ -80,12 +80,12 @@ export default function Navbar() {
               setActiveNav("my-plan");
               setMobileMenuOpen(false);
             }}
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border-0 outline-none focus:outline-none transition-all duration-150 text-zinc-300 hover:bg-[#1a1d23]"
+            className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl text-zinc-300 hover:bg-[#1a1d23] transition-colors"
           >
             <span>Plan</span>
             <span
               suppressHydrationWarning
-              className={`font-bold px-2 py-0.5 rounded-full text-[11px] leading-none min-w-4.5 text-center transition-colors ${
+              className={`font-bold px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] min-w-4 text-center ${
                 activeTab === "plan"
                   ? "bg-[#ccff00] text-black"
                   : "border border-zinc-700 bg-transparent text-white"
@@ -102,12 +102,12 @@ export default function Navbar() {
               setActiveNav("my-plan");
               setMobileMenuOpen(false);
             }}
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border-0 outline-none focus:outline-none transition-all duration-150 text-zinc-300 hover:bg-[#1a1d23]"
+            className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl text-zinc-300 hover:bg-[#1a1d23] transition-colors"
           >
             <span>Saved</span>
             <span
               suppressHydrationWarning
-              className={`font-bold px-2 py-0.5 rounded-full text-[11px] leading-none min-w-4.5 text-center transition-colors ${
+              className={`font-bold px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] min-w-4 text-center ${
                 activeTab === "saved"
                   ? "bg-[#ccff00] text-black"
                   : "border border-zinc-700 bg-transparent text-white"
@@ -117,10 +117,9 @@ export default function Navbar() {
             </span>
           </Link>
         </div>
-
       </div>
 
-      {/* Mobile Drawer */}
+      {/* মোবাইল ড্রয়ার */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-zinc-900 bg-[#0e1015] px-4 py-3 flex flex-col gap-2">
           <Link
@@ -129,7 +128,7 @@ export default function Navbar() {
               setActiveNav("workouts");
               setMobileMenuOpen(false);
             }}
-            className={`px-3 py-2 rounded-xl text-sm font-semibold border-0 outline-none focus:outline-none ${
+            className={`px-3 py-2 rounded-xl text-sm font-semibold ${
               activeNav === "workouts"
                 ? "bg-[#1a1d23] text-[#ccff00]"
                 : "text-zinc-300 hover:bg-[#1a1d23] hover:text-[#ccff00]"
@@ -143,7 +142,7 @@ export default function Navbar() {
               setActiveNav("my-plan");
               setMobileMenuOpen(false);
             }}
-            className={`px-3 py-2 rounded-xl text-sm font-semibold border-0 outline-none focus:outline-none ${
+            className={`px-3 py-2 rounded-xl text-sm font-semibold ${
               activeNav === "my-plan"
                 ? "bg-[#1a1d23] text-[#ccff00]"
                 : "text-zinc-300 hover:bg-[#1a1d23] hover:text-[#ccff00]"

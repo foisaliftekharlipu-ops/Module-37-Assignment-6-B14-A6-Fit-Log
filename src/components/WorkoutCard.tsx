@@ -199,7 +199,7 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
             ))}
           </div>
 
-          {/* এখানে font-(family-name:--font-oswald) দিয়ে আপনার মূল ওসওয়াল্ড ফন্টটি রিস্টোর করা হয়েছে */}
+       
           <h3 className="font-(family-name:--font-oswald) text-xl font-bold uppercase tracking-wide text-white leading-tight mt-1 group-hover:text-[#ccff00] transition-colors">
             {workoutName}
           </h3>
