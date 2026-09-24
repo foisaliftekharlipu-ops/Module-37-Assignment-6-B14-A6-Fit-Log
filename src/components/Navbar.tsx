@@ -8,14 +8,14 @@ import { useWorkout } from "@/context/WorkoutContext";
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState<string | null>(null);
-  
+
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false,
   );
 
-  const { todayPlan, savedWorkouts, setActiveTab } = useWorkout();
+  const { todayPlan, savedWorkouts, activeTab, setActiveTab } = useWorkout();
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[#0b0b0d] border-b border-zinc-900 font-(family-name:--font-inter)">
@@ -71,6 +71,7 @@ export default function Navbar() {
           </Link>
         </nav>
 
+        {/* Right: Plan & Saved Badges with dynamic active state */}
         <div className="flex items-center gap-2 text-xs font-semibold">
           <Link
             href="/my-plan"
@@ -84,7 +85,11 @@ export default function Navbar() {
             <span>Plan</span>
             <span
               suppressHydrationWarning
-              className="bg-[#ccff00] text-black font-bold px-2 py-0.5 rounded-full text-[11px] leading-none min-w-4.5 text-center"
+              className={`font-bold px-2 py-0.5 rounded-full text-[11px] leading-none min-w-4.5 text-center transition-colors ${
+                activeTab === "plan"
+                  ? "bg-[#ccff00] text-black"
+                  : "border border-zinc-700 bg-transparent text-white"
+              }`}
             >
               {mounted ? todayPlan.length : 0}
             </span>
@@ -102,7 +107,11 @@ export default function Navbar() {
             <span>Saved</span>
             <span
               suppressHydrationWarning
-              className="border border-zinc-700 bg-transparent text-white px-2 py-0.5 rounded-full text-[11px] leading-none min-w-4.5 text-center"
+              className={`font-bold px-2 py-0.5 rounded-full text-[11px] leading-none min-w-4.5 text-center transition-colors ${
+                activeTab === "saved"
+                  ? "bg-[#ccff00] text-black"
+                  : "border border-zinc-700 bg-transparent text-white"
+              }`}
             >
               {mounted ? savedWorkouts.length : 0}
             </span>
