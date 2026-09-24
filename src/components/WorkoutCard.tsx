@@ -5,11 +5,9 @@ import Link from "next/link";
 import { Clock, Flame, Star } from "lucide-react";
 
 interface WorkoutCardProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   workout: any;
 }
 
-// মেন্টরের ডিজাইন অনুযায়ী প্রতিটি ওয়ার্কআউটের নির্দিষ্ট ডেটা ম্যাপ
 const workoutStatsMap: Record<
   string,
   { categories: string[]; duration: number; calories: number; rating: number }
@@ -93,7 +91,6 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
   const normalizedName = workoutName.toLowerCase().trim();
   const fallback = workoutStatsMap[normalizedName];
 
-  // ১. ক্যাটাগরি নির্ধারণ
   const rawCategories =
     workout?.category ||
     workout?.categories ||
@@ -115,7 +112,6 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
     categories = ["Fitness"];
   }
 
-  // ২. ক্যালোরি নিখুঁতভাবে নির্ধারণ (যাতে কখনোই 0 না আসে)
   const rawCalories =
     workout?.calories ??
     workout?.calories_burned ??
@@ -136,7 +132,6 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
     caloriesVal = fallback?.calories || 180;
   }
 
-  // ৩. ডিউরেশন নির্ধারণ
   const rawDuration = workout?.duration ?? workout?.time;
   let durationVal = 0;
   if (typeof rawDuration === "number" && rawDuration > 0) {
@@ -152,10 +147,8 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
     durationVal = fallback?.duration || 25;
   }
 
-  // ৪. রেটিং
   const ratingVal = workout?.rating || fallback?.rating || 4.8;
 
-  // ৫. ইকুইপমেন্ট
   const rawEquipment = workout?.equipment || workout?.equipments;
   const equipmentText = Array.isArray(rawEquipment)
     ? rawEquipment.join(", ")
@@ -168,7 +161,6 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
       href={`/workout/${workout.id || workout._id}`}
       className="group flex flex-col bg-[#16181f] border border-zinc-800/80 rounded-2xl overflow-hidden hover:border-[#ccff00]/70 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/70"
     >
-      {/* ইমেজ */}
       <div className="relative w-full aspect-[16/10] bg-zinc-900 overflow-hidden">
         <Image
           src={workout?.image || "/banner.png"}
@@ -179,10 +171,8 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
         />
       </div>
 
-      {/* কন্টেন্ট */}
       <div className="p-5 flex flex-col flex-1 justify-between gap-4">
         <div className="flex flex-col gap-2">
-          {/* ক্যাটাগরি পিলস */}
           <div className="flex flex-wrap items-center gap-1.5 min-h-[22px]">
             {categories.map((cat, idx) => (
               <span
@@ -194,18 +184,15 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
             ))}
           </div>
 
-          {/* ওয়ার্কআউট নাম */}
           <h3 className="font-[family-name:var(--font-oswald)] text-xl font-bold uppercase tracking-wide text-white leading-tight mt-1 group-hover:text-[#ccff00] transition-colors">
             {workoutName}
           </h3>
 
-          {/* ইকুইপমেন্ট */}
           <p className="text-zinc-400 text-xs font-normal line-clamp-1">
             {equipmentText}
           </p>
         </div>
 
-        {/* স্ট্যাটস রো (সঠিক ক্যালোরিজ সহ) */}
         <div className="flex items-center gap-4 text-xs text-zinc-300 font-medium pt-1">
           <div className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-[#ccff00]" />

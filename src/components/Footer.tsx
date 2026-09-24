@@ -1,28 +1,24 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Dumbbell } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="w-full border-t border-zinc-800/80 bg-[#0b0b0d] py-6 mt-auto">
+    <footer className="w-full border-t border-zinc-900 bg-[#07080a] py-8 mt-16 font-[family-name:var(--font-inter)]">
       <div className="max-w-[1100px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         
-        <div className="flex items-center gap-2.5">
-          <Image
-            src="/logo.png"
-            alt="FitLog Logo"
-            width={20}
-            height={20}
-            className="w-5 h-5 object-contain -scale-x-100 -rotate-12"
-            priority
-          />
-          <span className="font-[family-name:var(--font-oswald)] text-xl font-normal tracking-wider text-white uppercase leading-none pt-0.5">
-            FITLOG
-          </span>
-        </div>
+        {/* Left: Brand Logo with the Dumbbell Icon */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-[family-name:var(--font-oswald)] text-lg font-bold tracking-wider text-white hover:opacity-90 transition-opacity"
+        >
+          <Dumbbell className="w-5 h-5 text-[#ccff00]" />
+          <span>FITLOG</span>
+        </Link>
 
-        <p className="font-[family-name:var(--font-inter)] text-xs text-zinc-400 font-normal tracking-wide">
+        {/* Right: Copyright line */}
+        <p className="text-zinc-500 text-xs sm:text-[13px] text-center sm:text-right">
           © 2026 FitLog — Workout Library. Train hard, log honest.
         </p>
-
       </div>
     </footer>
   );

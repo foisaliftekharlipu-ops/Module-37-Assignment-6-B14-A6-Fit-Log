@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
 const defaultWorkoutStats: Record<string, { duration: number; calories: number; rating: number }> = {
   "barbell bench press": { duration: 25, calories: 180, rating: 4.8 },
@@ -103,6 +104,10 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addToTodayPlan = (workout: WorkoutItem) => {
+    if (todayPlan.length >= 5) {
+      toast.error("Cap reached: You can only add up to 5 lifts for today!");
+      return;
+    }
     const prepared = normalizeItem(workout);
     setTodayPlan((prev) => {
       if (prev.some((item) => String(item.id) === String(prepared.id))) return prev;

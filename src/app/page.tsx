@@ -34,16 +34,16 @@ export default function HomePage() {
           
           {/* Left Content */}
           <div className="lg:col-span-7 flex flex-col items-start gap-4 z-10 max-w-xl">
-            <span className="font-[family-name:var(--font-oswald)] text-[#ccff00] text-xs sm:text-sm font-semibold tracking-widest uppercase">
+            <span className="font-(family-name:--font-oswald) text-[#ccff00] text-xs sm:text-sm font-semibold tracking-widest uppercase">
               WORKOUT LIBRARY
             </span>
 
-            <h1 className="font-[family-name:var(--font-oswald)] text-4xl sm:text-6xl lg:text-7xl font-bold uppercase tracking-tight text-white leading-[1.05]">
+            <h1 className="font-(family-name:--font-oswald) text-2xl sm:text-6xl lg:text-4xl uppercase font-earthlight tracking-tight text-white leading-[1.05]">
               TRAIN WITH INTENT. LOG <br />
               EVERY SET.
             </h1>
 
-            <p className="font-[family-name:var(--font-inter)] text-zinc-400 text-xs sm:text-sm lg:text-[15px] leading-relaxed font-normal mt-1">
+            <p className="font-(family-name:--font-inter) text-zinc-400 text-xs sm:text-sm lg:text-[15px] leading-relaxed font-normal mt-1">
               FitLog is a dark, no-nonsense gym companion: pick a lift, lock it into today&apos;s plan, and watch the week&apos;s work add up.
             </p>
 

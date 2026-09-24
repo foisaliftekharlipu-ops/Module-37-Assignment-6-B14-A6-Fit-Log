@@ -1,337 +1,293 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import { useEffect, useState, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Check, X, Clock, Flame, Star, ChevronDown, Loader2 } from "lucide-react";
-import { useWorkout } from "@/context/WorkoutContext";
+import { PlusCircle, Bookmark, ArrowLeft, Loader2 } from "lucide-react";
+import { useWorkout, WorkoutItem } from "@/context/WorkoutContext";
 import toast from "react-hot-toast";
 
-const workoutDataMap: Record<string, { duration: number; calories: number; rating: number }> = {
-  "barbell bench press": { duration: 25, calories: 180, rating: 4.8 },
-  "pull-up": { duration: 15, calories: 120, rating: 4.7 },
-  "back squat": { duration: 30, calories: 240, rating: 4.9 },
-  "overhead press": { duration: 20, calories: 150, rating: 4.6 },
-  "dumbbell bicep curl": { duration: 12, calories: 80, rating: 4.3 },
-  "hollow-body plank": { duration: 10, calories: 60, rating: 4.4 },
-  "burpee": { duration: 12, calories: 160, rating: 4.2 },
-  "conventional deadlift": { duration: 28, calories: 260, rating: 4.9 },
-  "push-up": { duration: 10, calories: 90, rating: 4.5 },
-  "walking lunge": { duration: 18, calories: 170, rating: 4.4 },
-  "russian twist": { duration: 8, calories: 70, rating: 4.1 },
-  "kettlebell swing": { duration: 16, calories: 200, rating: 4.7 },
+interface WorkoutDetail {
+  id: string | number;
+  name: string;
+  description?: string;
+  subtitle?: string;
+  image?: string;
+  category?: string | string[];
+  equipment?: string | string[];
+  difficulty?: string;
+  sets?: number | string;
+  reps?: string;
+  duration?: number | string;
+  calories?: number | string;
+  rating?: number | string;
+  instructions?: string[];
+}
+
+const workoutCategoryMap: Record<string, string[]> = {
+  "barbell bench press": ["Chest", "Arms"],
+  "pull-up": ["Back", "Arms"],
+  "back squat": ["Legs", "Core"],
+  "overhead press": ["Shoulders", "Arms"],
+  "dumbbell bicep curl": ["Arms"],
+  "hollow-body plank": ["Core"],
+  "burpee": ["Full Body"],
+  "conventional deadlift": ["Back", "Legs"],
+  "push-up": ["Chest", "Arms", "Core"],
+  "walking lunge": ["Legs"],
+  "russian twist": ["Core"],
+  "kettlebell swing": ["Full Body", "Shoulders"],
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getCalories(item: any): number {
-  if (!item) return 180;
-  const raw = item.calories ?? item.calories_burned ?? item.caloriesBurned ?? item.calorie;
-  if (typeof raw === "number" && !isNaN(raw) && raw > 0) return raw;
-  if (typeof raw === "string") {
-    const matched = raw.match(/\d+/);
-    if (matched) {
-      const num = parseInt(matched[0], 10);
-      if (num > 0) return num;
-    }
-  }
+export default function WorkoutDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const resolvedParams = use(params);
+  const workoutId = resolvedParams.id;
 
-  const name = String(item.name || "").toLowerCase().trim();
-  if (workoutDataMap[name]) return workoutDataMap[name].calories;
+  const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  for (const [key, val] of Object.entries(workoutDataMap)) {
-    if (name.includes(key) || key.includes(name)) {
-      return val.calories;
-    }
-  }
-  return 180;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getDuration(item: any): number {
-  if (!item) return 25;
-  const raw = item.duration ?? item.time ?? item.duration_min;
-  if (typeof raw === "number" && !isNaN(raw) && raw > 0) return raw;
-  if (typeof raw === "string") {
-    const matched = raw.match(/\d+/);
-    if (matched) {
-      const num = parseInt(matched[0], 10);
-      if (num > 0) return num;
-    }
-  }
-
-  const name = String(item.name || "").toLowerCase().trim();
-  if (workoutDataMap[name]) return workoutDataMap[name].duration;
-
-  for (const [key, val] of Object.entries(workoutDataMap)) {
-    if (name.includes(key) || key.includes(name)) {
-      return val.duration;
-    }
-  }
-  return 25;
-}
-
-function MyPlanContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
-
-  const [activeTab, setActiveTab] = useState<"plan" | "saved">("plan");
-  const [sortBy, setSortBy] = useState<"duration" | "calories" | "rating">("duration");
-  const [completedWorkouts, setCompletedWorkouts] = useState<Record<string | number, boolean>>({});
-
-  const {
-    todayPlan,
-    savedWorkouts,
-    removeFromTodayPlan,
-    removeFromSaved,
-  } = useWorkout();
+  const { addToTodayPlan, saveWorkout, todayPlan, savedWorkouts } = useWorkout();
 
   useEffect(() => {
-    if (tabParam === "saved") {
-      setActiveTab("saved");
-    } else if (tabParam === "plan") {
-      setActiveTab("plan");
-    }
-  }, [tabParam]);
+    async function fetchWorkoutData() {
+      try {
+        setLoading(true);
+        const res = await fetch(`https://api.abcz.workers.dev/api/fitlog/${workoutId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const item = data.data || data;
+          if (item && (item.id || item.name)) {
+            setWorkout(item);
+            setLoading(false);
+            return;
+          }
+        }
 
-  const handleTabChange = (tab: "plan" | "saved") => {
-    setActiveTab(tab);
-    router.replace(`/my-plan?tab=${tab}`, { scroll: false });
+        const listRes = await fetch("https://api.abcz.workers.dev/api/fitlog");
+        const listData = await listRes.json();
+        const workoutList: WorkoutDetail[] = Array.isArray(listData) ? listData : listData.data || [];
+        
+        const found = workoutList.find(
+          (w) => String(w.id) === String(workoutId)
+        );
+        setWorkout(found || null);
+      } catch (err) {
+        console.error("Failed to load workout details", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (workoutId) {
+      fetchWorkoutData();
+    }
+  }, [workoutId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-[500px] flex flex-col items-center justify-center gap-3 text-zinc-400 font-[family-name:var(--font-inter)]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#ccff00]" />
+        <p className="text-sm font-medium">Loading workout details…</p>
+      </div>
+    );
+  }
+
+  if (!workout) {
+    return (
+      <div className="min-h-[400px] flex flex-col items-center justify-center gap-4 text-center font-[family-name:var(--font-inter)]">
+        <p className="text-zinc-400 text-base">Workout not found.</p>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#ccff00] hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to library
+        </Link>
+      </div>
+    );
+  }
+
+  const normalizedName = workout.name?.toLowerCase().trim() || "";
+  const rawCategories = workout.category;
+  let categories: string[] = [];
+
+  if (Array.isArray(rawCategories) && rawCategories.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    categories = rawCategories.map((c) => (typeof c === "object" ? (c as any)?.name || "" : String(c)));
+  } else if (typeof rawCategories === "string" && rawCategories.trim() !== "") {
+    categories = rawCategories.split(",").map((c) => c.trim());
+  }
+
+  if (categories.length === 0 && workoutCategoryMap[normalizedName]) {
+    categories = workoutCategoryMap[normalizedName];
+  } else if (categories.length === 0) {
+    categories = ["Full Body"];
+  }
+
+  const equipmentText = Array.isArray(workout.equipment)
+    ? workout.equipment.join(", ")
+    : workout.equipment || "Barbell, Bench";
+
+  const defaultInstructions = [
+    "Lie on the bench with eyes under the bar and feet planted.",
+    "Unrack with locked elbows and lower the bar to mid-chest.",
+    "Press up in a slight arc until elbows lock without bouncing.",
+    "Keep shoulder blades pinched and a natural arch in the back.",
+  ];
+
+  const instructionsList =
+    Array.isArray(workout.instructions) && workout.instructions.length > 0
+      ? workout.instructions
+      : defaultInstructions;
+
+  const handleAddToPlan = () => {
+    const exists = todayPlan.some((item) => String(item.id) === String(workout.id));
+    if (exists) {
+      toast.error("Already in your plan");
+      return;
+    }
+    addToTodayPlan(workout as WorkoutItem);
+    toast.success("Added to today's plan");
   };
 
-  const totalExercises = todayPlan.length;
-  const totalMinutes = todayPlan.reduce((acc, curr) => acc + getDuration(curr), 0);
-  const totalCalories = todayPlan.reduce((acc, curr) => acc + getCalories(curr), 0);
-
-  const sortList = (list: typeof todayPlan) => {
-    return [...list].sort((a, b) => {
-      if (sortBy === "duration") return getDuration(b) - getDuration(a);
-      if (sortBy === "calories") return getCalories(b) - getCalories(a);
-      if (sortBy === "rating") return (Number(b.rating) || 0) - (Number(a.rating) || 0);
-      return 0;
-    });
-  };
-
-  const currentList = sortList(activeTab === "plan" ? todayPlan : savedWorkouts);
-
-  const handleMarkAsDone = (id: string | number) => {
-    const isCurrentlyDone = !!completedWorkouts[id];
-    setCompletedWorkouts((prev) => ({
-      ...prev,
-      [id]: !isCurrentlyDone,
-    }));
-
-    if (!isCurrentlyDone) {
-      toast.success("Workout logged — nice work");
+  const handleSaveForLater = () => {
+    const exists = savedWorkouts.some((item) => String(item.id) === String(workout.id));
+    if (exists) {
+      toast.error("Already in your saved list");
+      return;
     }
+    saveWorkout(workout as WorkoutItem);
+    toast.success("Saved for later");
   };
 
   return (
-    <div className="w-full max-w-[1100px] mx-auto py-2 flex flex-col gap-6 font-[family-name:var(--font-inter)]">
-      {/* Heading */}
-      <div className="flex flex-col gap-1.5 pt-2">
-        <h1 className="font-[family-name:var(--font-oswald)] text-3xl sm:text-4xl font-bold uppercase tracking-wide text-white leading-none">
-          MY PLAN
-        </h1>
-        <p className="text-zinc-400 text-xs sm:text-[13px] font-normal">
-          Cap of five lifts for today. Finish them, then load more.
-        </p>
-      </div>
+    <div className="w-full max-w-[1100px] mx-auto py-6 px-4 sm:px-6 font-[family-name:var(--font-inter)]">
+      {/* Back button */}
+      <Link
+        href="/"
+        className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors mb-6"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        <span>BACK TO LIBRARY</span>
+      </Link>
 
-      {/* Metrics Panel */}
-      <div className="bg-[#121318] border border-zinc-800/80 rounded-2xl grid grid-cols-3 divide-x divide-zinc-800/70 py-6 px-4 sm:px-8">
-        <div className="flex flex-col gap-1 px-4 sm:px-6">
-          <span className="text-zinc-400 text-xs font-medium">Exercises</span>
-          <span className="font-[family-name:var(--font-oswald)] text-3xl sm:text-4xl font-bold text-[#ccff00] leading-none">
-            {totalExercises}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-1 px-4 sm:px-6">
-          <span className="text-zinc-400 text-xs font-medium">Minutes</span>
-          <span className="font-[family-name:var(--font-oswald)] text-3xl sm:text-4xl font-bold text-white leading-none">
-            {totalMinutes}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-1 px-4 sm:px-6">
-          <span className="text-zinc-400 text-xs font-medium">Calories</span>
-          <span className="font-[family-name:var(--font-oswald)] text-3xl sm:text-4xl font-bold text-white leading-none">
-            {totalCalories}
-          </span>
-        </div>
-      </div>
-
-      {/* Tabs Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
-        <div className="inline-flex items-center bg-[#181920] border border-zinc-800/80 p-1.5 rounded-2xl">
-          <button
-            onClick={() => handleTabChange("plan")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all duration-150 ${
-              activeTab === "plan"
-                ? "bg-[#0c0d10] text-[#ccff00] shadow-sm"
-                : "text-zinc-400 hover:text-zinc-200 bg-transparent"
-            }`}
-          >
-            Today&apos;s Plan
-          </button>
-          <button
-            onClick={() => handleTabChange("saved")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all duration-150 ${
-              activeTab === "saved"
-                ? "bg-[#0c0d10] text-[#ccff00] shadow-sm"
-                : "text-zinc-400 hover:text-zinc-200 bg-transparent"
-            }`}
-          >
-            Saved
-          </button>
-        </div>
-
-        {/* Sort Dropdown */}
-        <div className="flex items-center gap-2.5 self-end sm:self-auto">
-          <span className="text-zinc-400 text-xs font-medium">Sort By</span>
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="appearance-none bg-[#121318] border border-zinc-800/90 text-white text-xs font-medium py-2 pl-3 pr-8 rounded-xl focus:outline-none focus:border-[#ccff00] cursor-pointer min-w-[120px]"
-            >
-              <option value="duration">Duration</option>
-              <option value="calories">Calories</option>
-              <option value="rating">Rating</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+      {/* Main Two-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
+        
+        {/* Left Column: Visual Media */}
+        <div className="lg:col-span-6 w-full flex">
+          <div className="relative w-full aspect-[4/5] lg:aspect-auto lg:h-full rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800/80 min-h-[380px]">
+            <Image
+              src={workout.image || "/banner.png"}
+              alt={workout.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              priority
+            />
           </div>
         </div>
-      </div>
 
-      {/* Workout Card List */}
-      <div className="flex flex-col gap-3">
-        {currentList.length === 0 ? (
-          <div className="border border-dashed border-zinc-800 rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
-            <p className="text-zinc-400 text-sm">
-              {activeTab === "plan"
-                ? "No exercises in today's plan yet."
-                : "No saved workouts found."}
-            </p>
-            <Link
-              href="/#library"
-              className="text-xs font-bold text-black bg-[#ccff00] hover:bg-[#b8e600] px-4 py-2 rounded-lg transition-colors"
-            >
-              BROWSE WORKOUTS
-            </Link>
-          </div>
-        ) : (
-          currentList.map((item) => {
-            const isDone = !!completedWorkouts[item.id];
-            const equipmentText = Array.isArray(item.equipment)
-              ? item.equipment.join(", ")
-              : item.equipment || "Barbell, Bench";
+        {/* Right Column: Details */}
+        <div className="lg:col-span-6 flex flex-col justify-between gap-6">
+          <div className="flex flex-col gap-4">
+            {/* Header Info */}
+            <div className="flex flex-col gap-2">
+              <h1 className="font-[family-name:var(--font-oswald)] text-4xl sm:text-5xl font-bold uppercase tracking-wide text-white leading-none">
+                {workout.name}
+              </h1>
+              <p className="text-zinc-400 text-xs sm:text-[13px] leading-relaxed font-normal">
+                {workout.description ||
+                  workout.subtitle ||
+                  "A compound press that builds chest thickness, triceps, and pressing power from a stable bench."}
+              </p>
 
-            const caloriesVal = getCalories(item);
-            const durationVal = getDuration(item);
-            const nameKey = String(item.name || "").toLowerCase().trim();
-            const ratingVal = item.rating || workoutDataMap[nameKey]?.rating || 4.8;
+              {/* Category Tag Pills */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                {categories.map((cat, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-[#ccff00] text-black text-[11px] font-bold tracking-tight px-2.5 py-0.5 rounded-full capitalize"
+                  >
+                    {cat}
+                  </span>
+                ))}
+              </div>
+            </div>
 
-            return (
-              <div
-                key={item.id}
-                className="bg-[#121318] border border-zinc-800/80 hover:border-zinc-700/80 transition-all rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <div className="relative w-20 h-16 sm:w-28 sm:h-20 rounded-xl overflow-hidden bg-zinc-900 shrink-0">
-                    <Image
-                      src={item.image || "/banner.png"}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <h3 className="font-[family-name:var(--font-oswald)] text-lg sm:text-xl font-bold uppercase text-white tracking-wide leading-tight">
-                      {item.name}
-                    </h3>
-                    <p className="text-zinc-400 text-xs font-normal">
-                      {equipmentText}
-                    </p>
-
-                    <div className="flex items-center gap-3 text-xs text-zinc-300 pt-0.5 font-medium">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-[#ccff00]" />
-                        <span>{durationVal} min</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Flame className="w-3.5 h-3.5 text-[#ccff00]" />
-                        <span>{caloriesVal} kcal</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 text-[#ccff00]" />
-                        <span>{ratingVal}</span>
-                      </div>
-                    </div>
-                  </div>
+            {/* Key Specs Table */}
+            <div className="bg-[#121318] border border-zinc-800/80 rounded-xl overflow-hidden shadow-inner">
+              <div className="divide-y divide-zinc-800/70 text-xs">
+                <div className="flex items-center justify-between px-5 py-2.5">
+                  <span className="text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">EQUIPMENT</span>
+                  <span className="text-zinc-200 font-medium">{equipmentText}</span>
                 </div>
-
-                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-                  <Link
-                    href={`/workout/${item.id}`}
-                    className="border border-zinc-700/90 hover:border-zinc-500 bg-[#161820] text-zinc-200 hover:text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors whitespace-nowrap"
-                  >
-                    View Details
-                  </Link>
-
-                  {activeTab === "plan" && (
-                    <button
-                      onClick={() => handleMarkAsDone(item.id)}
-                      className={`inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all whitespace-nowrap ${
-                        isDone
-                          ? "bg-zinc-700 text-zinc-300"
-                          : "bg-[#ccff00] hover:bg-[#b8e600] text-black shadow-sm"
-                      }`}
-                    >
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>{isDone ? "Completed" : "Mark as Done"}</span>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      if (activeTab === "plan") {
-                        removeFromTodayPlan(item.id);
-                        toast.success("Removed from plan");
-                      } else {
-                        removeFromSaved(item.id);
-                        toast.success("Removed from saved");
-                      }
-                    }}
-                    className="p-2 text-zinc-400 hover:text-white transition-colors flex items-center justify-center"
-                    title="Remove"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                <div className="flex items-center justify-between px-5 py-2.5">
+                  <span className="text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">DIFFICULTY</span>
+                  <span className="text-zinc-200 font-medium">{workout.difficulty || "Intermediate"}</span>
+                </div>
+                <div className="flex items-center justify-between px-5 py-2.5">
+                  <span className="text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">SETS</span>
+                  <span className="text-zinc-200 font-medium">{workout.sets || 4}</span>
+                </div>
+                <div className="flex items-center justify-between px-5 py-2.5">
+                  <span className="text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">REPS</span>
+                  <span className="text-zinc-200 font-medium">{workout.reps || "6-8"}</span>
+                </div>
+                <div className="flex items-center justify-between px-5 py-2.5">
+                  <span className="text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">DURATION</span>
+                  <span className="text-zinc-200 font-medium">{workout.duration || 25} min</span>
+                </div>
+                <div className="flex items-center justify-between px-5 py-2.5">
+                  <span className="text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">CALORIES</span>
+                  <span className="text-zinc-200 font-medium">{workout.calories || 180} kcal</span>
+                </div>
+                <div className="flex items-center justify-between px-5 py-2.5">
+                  <span className="text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">RATING</span>
+                  <span className="text-zinc-200 font-medium">{workout.rating || 4.8}</span>
                 </div>
               </div>
-            );
-          })
-        )}
+            </div>
+
+            {/* Instructions Section */}
+            <div className="flex flex-col gap-2">
+              <h2 className="font-[family-name:var(--font-oswald)] text-lg sm:text-xl font-bold uppercase tracking-wider text-white">
+                INSTRUCTIONS
+              </h2>
+              <ol className="flex flex-col gap-2 text-xs sm:text-[13px] text-zinc-300 font-normal leading-relaxed">
+                {instructionsList.map((step, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-[#ccff00] select-none font-bold">{index + 1}.</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <button
+              onClick={handleAddToPlan}
+              className="inline-flex items-center gap-2 bg-[#ccff00] hover:bg-[#b8e600] active:scale-95 text-black text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4 stroke-[2.5]" />
+              <span>Add to today&apos;s plan</span>
+            </button>
+
+            <button
+              onClick={handleSaveForLater}
+              className="inline-flex items-center gap-2 border border-zinc-700/80 hover:border-zinc-500 text-zinc-200 bg-transparent hover:text-white active:scale-95 text-xs font-medium px-4 py-2.5 rounded-xl transition-all cursor-pointer"
+            >
+              <Bookmark className="w-4 h-4" />
+              <span>Save for later</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  );
-}
-
-export default function MyPlanPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-[400px] flex flex-col items-center justify-center gap-3 text-zinc-400">
-          <Loader2 className="w-8 h-8 animate-spin text-[#ccff00]" />
-          <p className="text-sm font-medium">Loading plan…</p>
-        </div>
-      }
-    >
-      <MyPlanContent />
-    </Suspense>
   );
 }
