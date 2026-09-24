@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import { Clock, Flame, Star } from "lucide-react";
 
 interface WorkoutCardProps {
@@ -48,7 +48,7 @@ const workoutStatsMap: Record<
     calories: 60,
     rating: 4.4,
   },
-  "burgee": {
+  burgee: {
     categories: ["Full Body"],
     duration: 12,
     calories: 160,
@@ -99,9 +99,12 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
 
   let categories: string[] = [];
   if (Array.isArray(rawCategories) && rawCategories.length > 0) {
-    categories = rawCategories.map((c) =>
-      typeof c === "object" ? c?.name || "" : String(c)
-    );
+    categories = rawCategories.map((c: unknown) => {
+      if (typeof c === "object" && c !== null && "name" in c) {
+        return String((c as { name: unknown }).name || "");
+      }
+      return String(c ?? "");
+    });
   } else if (typeof rawCategories === "string" && rawCategories.trim() !== "") {
     categories = rawCategories.split(",").map((c) => c.trim());
   }
@@ -157,12 +160,16 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
   const equipmentText = Array.isArray(rawEquipment)
     ? rawEquipment.join(", ")
     : typeof rawEquipment === "string"
-    ? rawEquipment
-    : "Barbell, Bench";
+      ? rawEquipment
+      : "Barbell, Bench";
+
   const imageSrc =
     typeof workout?.image === "string" && workout.image.trim() !== ""
       ? workout.image
-      : "/banner.png";
+      : typeof workout?.thumbnail === "string" &&
+          workout.thumbnail.trim() !== ""
+        ? workout.thumbnail
+        : "/banner.png";
 
   return (
     <Link
@@ -174,8 +181,8 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
           src={imageSrc}
           alt={workoutName || "Workout"}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
       </div>
 
@@ -192,7 +199,7 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
             ))}
           </div>
 
-          <h3 className="font-(family-name:--font-oswald) text-xl font-bold uppercase tracking-wide text-white leading-tight mt-1 group-hover:text-[#ccff00] transition-colors">
+          <h3 className="font-[--font-oswald] text-xl font-bold uppercase tracking-wide text-white leading-tight mt-1 group-hover:text-[#ccff00] transition-colors">
             {workoutName}
           </h3>
 

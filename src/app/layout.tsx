@@ -6,12 +6,27 @@ import Footer from "@/components/Footer";
 import { WorkoutProvider } from "@/context/WorkoutContext";
 import { Toaster } from "react-hot-toast";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const oswald = Oswald({ subsets: ["latin"], variable: "--font-oswald" });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const oswald = Oswald({
+  subsets: ["latin"],
+  variable: "--font-oswald",
+});
 
 export const metadata: Metadata = {
-  title: "FitLog — Workout Library",
-  description: "Train with intent. Log every set.",
+  title: "FitLog — Workout Library & Plan",
+  description: "Train with intent. Log every set. FitLog is your ultimate gym companion.",
+  icons: {
+    icon: [
+      {
+        url: "/icon.png",
+        href: "/icon.png",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -20,41 +35,33 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${oswald.variable}`}>
-      <body className="min-h-screen flex flex-col bg-[#0b0b0d] text-white antialiased font-(family-name:--font-inter)">
+    <html lang="en" className={`${inter.variable} ${oswald.variable} scroll-smooth dark`}>
+      <body className="bg-[#12141a] text-zinc-100 antialiased font-sans flex flex-col min-h-screen">
         <WorkoutProvider>
 
           <Toaster
             position="top-right"
             toastOptions={{
-              duration: 3000,
               style: {
-                background: "#161922",
-                color: "#f4f4f5",
+                background: "#1c1f26",
+                color: "#ffffff",
                 border: "1px solid #27272a",
-                borderRadius: "12px",
-                padding: "10px 16px",
-                fontSize: "13px",
-                fontWeight: 500,
-                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
+                fontSize: "14px",
+                borderRadius: "8px",
               },
               success: {
                 iconTheme: {
-                  primary: "#22c55e",
-                  secondary: "#161922",
-                },
-              },
-              error: {
-                iconTheme: {
-                  primary: "#ef4444",
-                  secondary: "#161922",
+                  primary: "#ccff00",
+                  secondary: "#000000",
                 },
               },
             }}
           />
 
           <Navbar />
-          <div className="flex-1 w-full">{children}</div>
+
+          <main className="flex-1">{children}</main>
+
           <Footer />
         </WorkoutProvider>
       </body>

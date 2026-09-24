@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, Flame, Star, ChevronDown, Check, X } from "lucide-react";
@@ -18,10 +18,11 @@ export default function MyPlanPage() {
   } = useWorkout();
 
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const [sortBy, setSortBy] = useState<"duration" | "calories" | "rating">("duration");
 
