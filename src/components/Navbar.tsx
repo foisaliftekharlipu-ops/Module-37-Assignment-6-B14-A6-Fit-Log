@@ -1,38 +1,58 @@
 "use client";
 
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Dumbbell } from "lucide-react";
+import { Dumbbell, Menu, X } from "lucide-react";
 import { useWorkout } from "@/context/WorkoutContext";
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const { todayPlan, savedWorkouts, activeTab, setActiveTab } = useWorkout();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState<string | null>(null);
+  
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
-  const isWorkoutsActive = pathname === "/";
-  const isMyPlanPage = pathname.startsWith("/my-plan");
+  const { todayPlan, savedWorkouts, setActiveTab } = useWorkout();
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[#0b0b0d] border-b border-zinc-900 font-[family-name:var(--font-inter)]">
-      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full bg-[#0b0b0d] border-b border-zinc-900 font-(family-name:--font-inter)">
+      <div className="mx-auto w-full max-w-6xl px-4 h-16 flex items-center justify-between">
         
-        {/* Logo */}
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-[family-name:var(--font-oswald)] text-xl font-bold tracking-wider text-white"
-        >
-          <Dumbbell className="w-5 h-5 text-[#ccff00]" />
-          <span>FITLOG</span>
-        </Link>
+        {/* Left: Brand Logo */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-1.5 text-zinc-300 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors outline-none focus:outline-none"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
 
-        {/* Center Links */}
-        <nav className="flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-wide">
           <Link
             href="/"
-            className={`px-3.5 py-1.5 rounded-xl transition-all duration-150 ${
-              isWorkoutsActive
-                ? "bg-[#1a1d23] text-[#c4f000] font-bold"
-                : "text-zinc-200 hover:bg-[#1a1d23] hover:text-[#c4f000]"
+            onClick={() => {
+              setActiveNav(null);
+              setMobileMenuOpen(false);
+            }}
+            className="flex items-center gap-2 font-(family-name:--font-oswald) text-lg sm:text-xl font-bold tracking-wider text-white hover:opacity-90 transition-opacity outline-none"
+          >
+            <Dumbbell className="w-5 h-5 text-[#ccff00]" />
+            <span>FITLOG</span>
+          </Link>
+        </div>
+
+        {/* Center: Navigation Links */}
+        <nav className="hidden md:flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-wide">
+          <Link
+            href="/"
+            onClick={() => setActiveNav("workouts")}
+            className={`px-3.5 py-1.5 rounded-xl border-0 outline-none focus:outline-none focus:ring-0 transition-all duration-150 ${
+              activeNav === "workouts"
+                ? "bg-[#1a1d23] text-[#ccff00]"
+                : "text-zinc-300 hover:bg-[#1a1d23] hover:text-[#ccff00]"
             }`}
           >
             Workouts
@@ -40,52 +60,90 @@ export default function Navbar() {
 
           <Link
             href="/my-plan"
-            className={`px-3.5 py-1.5 rounded-xl transition-all duration-150 ${
-              isMyPlanPage
-                ? "bg-[#1a1d23] text-[#c4f000] font-bold"
-                : "text-zinc-200 hover:bg-[#1a1d23] hover:text-[#c4f000]"
+            onClick={() => setActiveNav("my-plan")}
+            className={`px-3.5 py-1.5 rounded-xl border-0 outline-none focus:outline-none focus:ring-0 transition-all duration-150 ${
+              activeNav === "my-plan"
+                ? "bg-[#1a1d23] text-[#ccff00]"
+                : "text-zinc-300 hover:bg-[#1a1d23] hover:text-[#ccff00]"
             }`}
           >
             My Plan
           </Link>
         </nav>
 
-        {/* Right Badges (Plan & Saved) */}
         <div className="flex items-center gap-2 text-xs font-semibold">
-          {/* Plan Badge */}
           <Link
             href="/my-plan"
-            onClick={() => setActiveTab("plan")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all duration-150 ${
-              isMyPlanPage && activeTab === "plan"
-                ? "bg-[#1a1d23] text-[#c4f000] font-bold"
-                : "text-zinc-300 hover:bg-[#1a1d23] hover:text-[#c4f000]"
-            }`}
+            onClick={() => {
+              setActiveTab("plan");
+              setActiveNav("my-plan");
+              setMobileMenuOpen(false);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-0 outline-none focus:outline-none transition-all duration-150 text-zinc-300 hover:bg-[#1a1d23]"
           >
             <span>Plan</span>
-            <span className="bg-[#ccff00] text-black font-bold px-2 py-0.5 rounded-full text-[11px] leading-none">
-              {todayPlan.length}
+            <span
+              suppressHydrationWarning
+              className="bg-[#ccff00] text-black font-bold px-2 py-0.5 rounded-full text-[11px] leading-none min-w-4.5 text-center"
+            >
+              {mounted ? todayPlan.length : 0}
             </span>
           </Link>
 
-          {/* Saved Badge */}
           <Link
             href="/my-plan"
-            onClick={() => setActiveTab("saved")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all duration-150 ${
-              isMyPlanPage && activeTab === "saved"
-                ? "bg-[#1a1d23] text-[#c4f000] font-bold"
-                : "text-zinc-300 hover:bg-[#1a1d23] hover:text-[#c4f000]"
-            }`}
+            onClick={() => {
+              setActiveTab("saved");
+              setActiveNav("my-plan");
+              setMobileMenuOpen(false);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-0 outline-none focus:outline-none transition-all duration-150 text-zinc-300 hover:bg-[#1a1d23]"
           >
             <span>Saved</span>
-            <span className="border border-zinc-700 bg-zinc-900 text-zinc-200 px-2 py-0.5 rounded-full text-[11px] leading-none">
-              {savedWorkouts.length}
+            <span
+              suppressHydrationWarning
+              className="border border-zinc-700 bg-transparent text-white px-2 py-0.5 rounded-full text-[11px] leading-none min-w-4.5 text-center"
+            >
+              {mounted ? savedWorkouts.length : 0}
             </span>
           </Link>
         </div>
 
       </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-zinc-900 bg-[#0e1015] px-4 py-3 flex flex-col gap-2">
+          <Link
+            href="/"
+            onClick={() => {
+              setActiveNav("workouts");
+              setMobileMenuOpen(false);
+            }}
+            className={`px-3 py-2 rounded-xl text-sm font-semibold border-0 outline-none focus:outline-none ${
+              activeNav === "workouts"
+                ? "bg-[#1a1d23] text-[#ccff00]"
+                : "text-zinc-300 hover:bg-[#1a1d23] hover:text-[#ccff00]"
+            }`}
+          >
+            Workouts
+          </Link>
+          <Link
+            href="/my-plan"
+            onClick={() => {
+              setActiveNav("my-plan");
+              setMobileMenuOpen(false);
+            }}
+            className={`px-3 py-2 rounded-xl text-sm font-semibold border-0 outline-none focus:outline-none ${
+              activeNav === "my-plan"
+                ? "bg-[#1a1d23] text-[#ccff00]"
+                : "text-zinc-300 hover:bg-[#1a1d23] hover:text-[#ccff00]"
+            }`}
+          >
+            My Plan
+          </Link>
+        </div>
+      )}
     </header>
   );
 }
