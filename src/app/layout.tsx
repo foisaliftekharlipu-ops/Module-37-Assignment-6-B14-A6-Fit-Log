@@ -20,12 +20,7 @@ export const metadata: Metadata = {
   title: "FitLog — Workout Library & Plan",
   description: "Train with intent. Log every set. FitLog is your ultimate gym companion.",
   icons: {
-    icon: [
-      {
-        url: "/icon.png",
-        href: "/icon.png",
-      },
-    ],
+    icon: "/icon.svg",
   },
 };
 
