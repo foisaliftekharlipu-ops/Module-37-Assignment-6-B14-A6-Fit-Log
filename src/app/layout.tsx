@@ -35,7 +35,32 @@ export default function RootLayout({
           <Navbar />
           <div className="flex-1 bg-[#0b0b0d]">{children}</div>
           <Footer />
-          <Toaster position="bottom-right" />
+          {/* আসল ডার্ক ডিজাইন এবং টপ পজিশনে টোস্টার কনফিগারেশন */}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: "#16181f",
+                color: "#ffffff",
+                border: "1px solid rgba(63, 63, 70, 0.4)",
+                borderRadius: "12px",
+                fontSize: "13px",
+                fontWeight: "600",
+              },
+              success: {
+                iconTheme: {
+                  primary: "#ccff00",
+                  secondary: "#000000",
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: "#ef4444",
+                  secondary: "#ffffff",
+                },
+              },
+            }}
+          />
         </WorkoutProvider>
       </body>
     </html>
